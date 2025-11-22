@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Pembayaran & Store</title>
+    <title>Pembayaran & Store</title>
     <style>
         :root {
             --primary: #4a5568;
@@ -268,6 +268,58 @@
             margin-bottom: 10px;
         }
 
+        .qris-container {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .qris-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            border: 2px solid white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .qris-image:hover {
+            transform: scale(1.05);
+        }
+
+        .qris-note {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .qris-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            background: linear-gradient(to right, #38a169, #2f855a);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .download-btn:hover {
+            background: linear-gradient(to right, #2f855a, #276749);
+            transform: translateY(-2px);
+        }
+
         .copy-btn {
             background: var(--light);
             color: var(--dark);
@@ -484,6 +536,55 @@
             transform: translateX(-3px);
         }
 
+        /* Modal untuk QRIS */
+        .qris-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .qris-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .qris-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+
+        .qris-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--dark);
+        }
+
+        .qris-modal-image {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 10px;
+        }
+
         @media (max-width: 768px) {
             .payment-info {
                 flex-direction: column;
@@ -525,6 +626,10 @@
                 width: 100%;
                 max-width: 300px;
                 justify-content: center;
+            }
+
+            .qris-actions {
+                flex-direction: column;
             }
         }
 
@@ -605,6 +710,20 @@
         </div>
     </div>
 
+    <!-- QRIS Modal -->
+    <div class="qris-modal" id="qrisModal">
+        <div class="qris-modal-content">
+            <button class="qris-modal-close" id="qrisModalClose">&times;</button>
+            <h3>QRIS Payment</h3>
+            <img src="https://files.catbox.moe/t3snag.jpg" alt="QRIS Payment" class="qris-modal-image">
+            <div class="qris-actions" style="margin-top: 20px;">
+                <button class="download-btn" id="downloadQrisBtn">
+                    <i class="fas fa-download"></i> Download QRIS
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="notification" id="notification">
         Nomor DANA berhasil disalin!
     </div>
@@ -616,7 +735,7 @@
 
     <header class="dimension-effect">
         <div class="container">
-            <h1>Toko Cebol</h1>
+            <h1>TOKO CEBOL</h1>
             <p>Layanan Pembayaran & Store Terpercaya</p>
         </div>
     </header>
@@ -648,6 +767,23 @@
                         <i class="fas fa-copy"></i> Salin Nomor
                     </button>
                     <p>Transfer sesuai nominal</p>
+                </div>
+                
+                <div class="payment-card pulse">
+                    <h3>QRIS</h3>
+                    <p><i class="fas fa-qrcode"></i> Scan Kode QRIS</p>
+                    <div class="qris-container">
+                        <img src="https://files.catbox.moe/t3snag.jpg" alt="QRIS Payment" class="qris-image" id="qrisImage">
+                        <p class="qris-note">Klik gambar untuk memperbesar</p>
+                        <div class="qris-actions">
+                            <button class="download-btn" id="downloadQrisSmallBtn">
+                                <i class="fas fa-download"></i> Download QRIS
+                            </button>
+                            <button class="copy-btn" id="copyQrisLinkBtn">
+                                <i class="fas fa-link"></i> Salin Link
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -840,6 +976,14 @@
             const bgMusic = document.getElementById('bgMusic');
             const soundControl = document.getElementById('soundControl');
             
+            // QRIS elements
+            const qrisImage = document.getElementById('qrisImage');
+            const qrisModal = document.getElementById('qrisModal');
+            const qrisModalClose = document.getElementById('qrisModalClose');
+            const downloadQrisBtn = document.getElementById('downloadQrisBtn');
+            const downloadQrisSmallBtn = document.getElementById('downloadQrisSmallBtn');
+            const copyQrisLinkBtn = document.getElementById('copyQrisLinkBtn');
+            
             // Fungsi untuk menampilkan section
             function showSection(section) {
                 // Sembunyikan semua section dan tombol utama
@@ -863,6 +1007,73 @@
             showStoreBtn.addEventListener('click', () => showSection(storeSection));
             backFromPaymentBtn.addEventListener('click', backToMain);
             backFromStoreBtn.addEventListener('click', backToMain);
+            
+            // QRIS Modal functionality
+            qrisImage.addEventListener('click', () => {
+                qrisModal.classList.add('active');
+            });
+            
+            qrisModalClose.addEventListener('click', () => {
+                qrisModal.classList.remove('active');
+            });
+            
+            // Close modal when clicking outside
+            qrisModal.addEventListener('click', (e) => {
+                if (e.target === qrisModal) {
+                    qrisModal.classList.remove('active');
+                }
+            });
+            
+            // Download QRIS functionality
+            function downloadQRIS() {
+                const qrisUrl = 'https://files.catbox.moe/t3snag.jpg';
+                
+                // Create a temporary anchor element
+                const a = document.createElement('a');
+                a.href = qrisUrl;
+                a.download = 'QRIS_Toko_4_Dimensi.jpg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // Show notification
+                showNotification('QRIS berhasil diunduh!');
+            }
+            
+            downloadQrisBtn.addEventListener('click', downloadQRIS);
+            downloadQrisSmallBtn.addEventListener('click', downloadQRIS);
+            
+            // Copy QRIS link functionality
+            copyQrisLinkBtn.addEventListener('click', function() {
+                const qrisUrl = 'https://files.catbox.moe/t3snag.jpg';
+                
+                navigator.clipboard.writeText(qrisUrl).then(function() {
+                    showNotification('Link QRIS berhasil disalin!');
+                    
+                    // Ubah tampilan tombol
+                    copyQrisLinkBtn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
+                    copyQrisLinkBtn.classList.add('copied');
+                    
+                    // Reset tombol setelah 2 detik
+                    setTimeout(function() {
+                        copyQrisLinkBtn.innerHTML = '<i class="fas fa-link"></i> Salin Link';
+                        copyQrisLinkBtn.classList.remove('copied');
+                    }, 2000);
+                }).catch(function(err) {
+                    console.error('Gagal menyalin link: ', err);
+                    alert('Gagal menyalin link QRIS. Silakan salin manual: ' + qrisUrl);
+                });
+            });
+            
+            // Helper function untuk menampilkan notifikasi
+            function showNotification(message) {
+                notification.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(function() {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
             
             // Auto play music dengan loop
             function playAudio() {
@@ -932,7 +1143,7 @@
                 // Salin ke clipboard
                 navigator.clipboard.writeText(danaNumber).then(function() {
                     // Tampilkan notifikasi
-                    notification.classList.add('show');
+                    showNotification('Nomor DANA berhasil disalin!');
                     
                     // Ubah tampilan tombol
                     copyBtn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
@@ -943,11 +1154,6 @@
                         copyBtn.innerHTML = '<i class="fas fa-copy"></i> Salin Nomor';
                         copyBtn.classList.remove('copied');
                     }, 2000);
-                    
-                    // Sembunyikan notifikasi setelah 3 detik
-                    setTimeout(function() {
-                        notification.classList.remove('show');
-                    }, 3000);
                 }).catch(function(err) {
                     console.error('Gagal menyalin teks: ', err);
                     alert('Gagal menyalin nomor DANA. Silakan salin manual: ' + danaNumber);
